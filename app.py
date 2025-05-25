@@ -51,6 +51,7 @@ def cluster_jobs_with_loaded_model(df, kmeans_model, vectorizer):
     df['Cluster'] = kmeans_model.predict(X)
     return df
 
+# Streamlit App
 st.title("Karkidi Job Scraper with Pre-trained Clustering")
 
 keywords_input = st.text_input("Enter job keywords (comma-separated)", value="data science, software engineer, data analyst")
@@ -62,9 +63,19 @@ if st.button("Scrape & Cluster Jobs"):
         kmeans_model, vectorizer = load_models()
     with st.spinner(f"Scraping {pages} pages for keywords: {', '.join(keywords)} ..."):
         jobs_df = scrape_karkidi_jobs(keywords, pages)
+    
     if jobs_df.empty:
         st.warning("No jobs found for these keywords.")
     else:
         clustered_df = cluster_jobs_with_loaded_model(jobs_df, kmeans_model, vectorizer)
         st.success("Jobs clustered successfully!")
-        st.dataframe(clustered_df)
+
+        # Cluster filtering UI
+        available_clusters = sorted(clustered_df['Cluster'].unique())
+        selected_clusters = st.multiselect("Filter by Cluster(s)", available_clusters, default=available_clusters)
+
+        # Filter based on selected clusters
+        filtered_df = clustered_df[clustered_df['Cluster'].isin(selected_clusters)]
+
+        st.write(f"Showing {len(filtered_df)} jobs in selected cluster(s):")
+        st.dataframe(filtered_df)
